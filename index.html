@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projectile Motion Lab | Physics Simulation</title>
+<meta name="description" content="Interactive projectile motion physics simulator with drag, gravity toggle, and ball type selection.">
+<style>
+/* ================================================================
+   DESIGN SYSTEM — Physics Lab Theme
+   Primary: deep blue #1E40AF | Accent: amber #F59E0B
+   Fonts: system sans + monospace for data
+   ================================================================ */
+:root {
+  --primary: #1E40AF;
+  --primary-light: #3B82F6;
+  --primary-dark: #1E3A8A;
+  --accent: #F59E0B;
+  --accent-light: #FBBF24;
+  --bg: #F8FAFC;
+  --bg-alt: #F1F5F9;
+  --card: #FFFFFF;
+  --text: #1E3A8A;
+  --text-body: #334155;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --success: #16A34A;
+  --danger: #DC2626;
+  --chart-1: #1E40AF;
+  --chart-2: #F59E0B;
+  --chart-3: #16A34A;
+  --chart-4: #DC2626;
+  --chart-5: #8B5CF6;
+  --radius: 10px;
+  --shadow-sm: 0 1px 3px rgba(30,58,138,0.08);
+  --shadow-md: 0 4px 12px rgba(30,58,138,0.10), 0 2px 4px rgba(30,58,138,0.06);
+  --shadow-lg: 0 8px 24px rgba(30,58,138,0.12), 0 4px 8px rgba(30,58,138,0.08);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "Roboto Mono", Consolas, "Courier New", monospace;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur: 250ms;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
+  color: var(--text-body);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Navbar ── */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(248,250,252,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+.nav-brand-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  padding: 8px 14px; border-radius: 8px; cursor: pointer;
+  font-size: 0.9rem; font-weight: 500; color: var(--muted);
+  text-decoration: none; border: none; background: none;
+  transition: all var(--dur-fast) var(--ease);
+  font-family: var(--font-sans);
+}
+.nav-link:hover { color: var(--primary); background: rgba(30,64,175,0.06); }
+.nav-link.active { color: #fff; background: var(--primary); }
+
+/* ── Layout ── */
+.container { max-width: 1280px; margin: 0 auto; padding: 32px 24px 64px; }
+
+.page-header { text-align: center; margin-bottom: 32px; }
+.page-header .icon-wrap {
+  width: 56px; height: 56px; margin: 0 auto 12px;
+  border-radius: 16px; background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.page-header h1 {
+  font-size: 2.4rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.page-header p { font-size: 1.15rem; color: var(--muted); margin-top: 6px; }
+
+.grid-main { display: grid; grid-template-columns: 340px 1fr; gap: 24px; }
+@media (max-width: 900px) { .grid-main { grid-template-columns: 1fr; } }
+
+/* ── Card ── */
+.card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 20px; border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 1.15rem; font-weight: 600; color: var(--primary);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+
+/* ── Form controls ── */
+.form-group { margin-bottom: 18px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.85rem; font-weight: 500; color: var(--text-body); margin-bottom: 6px;
+}
+.form-value {
+  font-family: var(--font-mono); font-weight: 700; color: var(--primary);
+  font-size: 0.9rem;
+}
+.form-value .unit { color: var(--muted); font-weight: 400; margin-left: 2px; }
+
+/* Custom slider */
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 6px; border-radius: 3px;
+  background: var(--border); outline: none; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--primary); border: 2px solid #fff;
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease);
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--primary); border: 2px solid #fff;
+  box-shadow: var(--shadow-sm); cursor: pointer;
+}
+
+/* Select */
+select {
+  width: 100%; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  font-size: 0.9rem; color: var(--text-body); cursor: pointer;
+  font-family: var(--font-sans);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+select:focus { outline: none; border-color: var(--primary); }
+
+/* Toggle switch */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+}
+.toggle-row .toggle-label { font-size: 0.85rem; font-weight: 500; }
+.toggle-row .toggle-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute; inset: 0; border-radius: 12px;
+  background: var(--border); cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.switch .slider::before {
+  content: ""; position: absolute; width: 18px; height: 18px;
+  left: 3px; top: 3px; border-radius: 50%; background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.switch input:checked + .slider { background: var(--primary); }
+.switch input:checked + .slider::before { transform: translateX(18px); }
+.switch input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Ball selector ── */
+.ball-selector { display: flex; flex-direction: column; gap: 8px; }
+.ball-option {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px;
+  cursor: pointer; background: var(--card);
+  transition: all var(--dur-fast) var(--ease);
+}
+.ball-option:hover { border-color: var(--primary-light); background: rgba(30,64,175,0.03); }
+.ball-option.selected { border-color: var(--primary); background: rgba(30,64,175,0.06); }
+.ball-option canvas { width: 44px; height: 44px; flex-shrink: 0; }
+.ball-option .ball-info { flex: 1; min-width: 0; }
+.ball-option .ball-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.ball-option .ball-spec { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); }
+
+.ball-preview-card { text-align: center; }
+.ball-preview-canvas { width: 120px; height: 120px; margin: 8px auto; }
+.ball-preview-name { font-size: 1.1rem; font-weight: 600; color: var(--text); }
+.ball-preview-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
+}
+.ball-preview-stat {
+  background: var(--bg-alt); border-radius: 8px; padding: 8px 4px;
+}
+.ball-preview-stat .label { font-size: 0.68rem; color: var(--muted); }
+.ball-preview-stat .val { font-size: 0.82rem; font-weight: 700; color: var(--primary); font-family: var(--font-mono); }
+
+/* ── Stats grid ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat-box {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-box .stat-label { font-size: 0.75rem; color: var(--muted); }
+.stat-box .stat-val {
+  font-family: var(--font-mono); font-weight: 700; font-size: 1.4rem;
+  margin-top: 2px;
+}
+.stat-box .stat-val .stat-unit { font-size: 0.8rem; color: var(--muted); margin-left: 3px; }
+.stat-box.highlight { border-color: var(--primary); background: rgba(30,64,175,0.04); }
+.stat-box.highlight .stat-val { color: var(--primary); }
+.stat-box.diff .stat-val { color: var(--danger); }
+
+/* ── Badge ── */
+.badge {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 0.75rem; font-weight: 500; background: var(--bg-alt); color: var(--muted);
+}
+
+/* ── Canvas container ── */
+.canvas-wrap {
+  position: relative; width: 100%;
+  background: linear-gradient(180deg, #F0F4FF 0%, #FAFCFF 100%);
+  border-radius: 8px; border: 1px solid var(--border);
+  overflow: hidden;
+}
+canvas.chart { display: block; width: 100%; }
+
+/* ── Table ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.data-table th {
+  text-align: left; padding: 10px 12px; font-weight: 600;
+  color: var(--muted); border-bottom: 2px solid var(--border);
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.data-table th.right, .data-table td.right { text-align: right; }
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.data-table td.mono { font-family: var(--font-mono); }
+.data-table tr:last-child td { border-bottom: none; }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.tab {
+  padding: 8px 16px; border: none; background: none; cursor: pointer;
+  font-size: 0.85rem; font-weight: 500; color: var(--muted);
+  border-bottom: 2px solid transparent; transition: all var(--dur-fast) var(--ease);
+  font-family: var(--font-sans);
+}
+.tab:hover { color: var(--primary); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Checkbox row ── */
+.check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.check-row input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.check-color { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+
+/* ── Info note ── */
+.info-note {
+  background: var(--bg-alt); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px; font-size: 0.82rem; color: var(--muted);
+}
+.info-note strong { color: var(--text); }
+.formula { font-family: var(--font-mono); color: var(--text-body); }
+
+/* ── Analysis text ── */
+.analysis-list { list-style: none; padding: 0; }
+.analysis-list li {
+  padding: 6px 0 6px 20px; position: relative;
+  font-size: 0.86rem; color: var(--muted);
+}
+.analysis-list li::before { content: "•"; position: absolute; left: 0; color: var(--primary); font-weight: 700; }
+.analysis-list strong { color: var(--text); }
+
+/* ── Page transition ── */
+.page { display: none; animation: fadeIn 0.3s var(--ease); }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .page-header h1 { font-size: 1.8rem; }
+  .page-header p { font-size: 1rem; }
+  .nav-links { gap: 0; flex-wrap: wrap; }
+  .nav-link { padding: 6px 8px; font-size: 0.8rem; }
+  .container { padding: 20px 16px 48px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .ball-preview-stats { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) {
+  .nav-brand span:not(.nav-brand-icon) { display: none; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════ Navbar ════════════ -->
+<nav class="navbar">
+  <a href="#" class="nav-brand" onclick="showPage('simulator');return false;">
+    <span class="nav-brand-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+      </svg>
+    </span>
+    <span>ProjectileLab</span>
+  </a>
+  <div class="nav-links">
+    <button class="nav-link active" data-page="simulator" onclick="showPage('simulator')">Simulator</button>
+    <button class="nav-link" data-page="comparison" onclick="showPage('comparison')">Comparison</button>
+    <button class="nav-link" data-page="net" onclick="showPage('net')">Net Clearance</button>
+    <button class="nav-link" data-page="drag" onclick="showPage('drag')">Drag Analysis</button>
+  </div>
+</nav>
+
+<!-- ════════════ SIMULATOR PAGE ════════════ -->
+<div id="page-simulator" class="page active">
+  <div class="container">
+    <div class="page-header">
+      <div class="icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+          <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+          <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+          <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+        </svg>
+      </div>
+      <h1>Projectile Motion Simulator</h1>
+      <p>Adjust parameters and watch the trajectory update in real time</p>
+    </div>
+
+    <div class="grid-main">
+      <!-- Left: Controls -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Ball Type</div>
+          <div class="ball-selector" id="ballSelector"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Launch Parameters</div>
+          <div class="form-group">
+            <div class="form-label">Launch Angle <span class="form-value"><span id="valAngle">45</span><span class="unit">°</span></span></div>
+            <input type="range" id="ctrlAngle" min="1" max="89" step="1" value="45" oninput="onSimParamChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Initial Velocity <span class="form-value"><span id="valVel">20</span><span class="unit"> m/s</span></span></div>
+            <input type="range" id="ctrlVel" min="1" max="80" step="0.5" value="20" oninput="onSimParamChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Ball Mass <span class="form-value"><span id="valMass">0.270</span><span class="unit"> kg</span></span></div>
+            <input type="range" id="ctrlMass" min="0.001" max="1" step="0.001" value="0.270" oninput="onSimParamChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Ball Diameter <span class="form-value"><span id="valDia">0.210</span><span class="unit"> m</span></span></div>
+            <input type="range" id="ctrlDia" min="0.02" max="0.3" step="0.001" value="0.210" oninput="onSimParamChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Drag Coefficient (Cd) <span class="form-value"><span id="valCd">0.40</span></span></div>
+            <input type="range" id="ctrlCd" min="0.05" max="0.6" step="0.01" value="0.40" oninput="onSimParamChange()">
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">Environment</div>
+          <div class="form-group">
+            <div class="form-label">Gravity</div>
+            <select id="ctrlGravity" onchange="onSimParamChange()">
+              <option value="earth">Earth (g = 9.81 m/s²)</option>
+              <option value="moon">Moon (g = 1.62 m/s²)</option>
+            </select>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Air Resistance</div>
+              <div class="toggle-sub" id="dragSub">Density ρ = 1.225 kg/m³</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="ctrlDrag" checked onchange="onSimParamChange()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Visualization -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card ball-preview-card">
+          <div class="card-title" style="justify-content:center;">Selected Ball Preview</div>
+          <canvas id="ballPreview" class="ball-preview-canvas" width="240" height="240"></canvas>
+          <div class="ball-preview-name" id="ballPreviewName">Volleyball</div>
+          <div class="ball-preview-stats">
+            <div class="ball-preview-stat"><div class="label">Diameter</div><div class="val" id="bpDia">0.210 m</div></div>
+            <div class="ball-preview-stat"><div class="label">Mass</div><div class="val" id="bpMass">0.270 kg</div></div>
+            <div class="ball-preview-stat"><div class="label">Drag Cd</div><div class="val" id="bpCd">0.40</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="card-title" style="margin:0;">Trajectory</div>
+            <span class="badge" id="modelBadge">With Drag (RK4)</span>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="simCanvas" class="chart" style="height:380px;"></canvas>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="simStats"></div>
+
+        <div class="card">
+          <div class="card-title">Velocity Decomposition — Horizontal & Vertical Components</div>
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab(event,'simTabAll')">All Velocities</button>
+            <button class="tab" onclick="switchTab(event,'simTabComp')">Components</button>
+            <button class="tab" onclick="switchTab(event,'simTabH')">Horizontal Only</button>
+          </div>
+          <div id="simTabAll" class="tab-panel active">
+            <div class="canvas-wrap"><canvas id="velChartAll" class="chart" style="height:280px;"></canvas></div>
+          </div>
+          <div id="simTabComp" class="tab-panel">
+            <div class="canvas-wrap"><canvas id="velChartComp" class="chart" style="height:280px;"></canvas></div>
+          </div>
+          <div id="simTabH" class="tab-panel">
+            <div class="canvas-wrap"><canvas id="velChartH" class="chart" style="height:280px;"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Physics Model</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="info-note">
+              <strong style="color:var(--chart-3);">Frictionless (Theory)</strong>
+              <div class="formula" style="margin-top:6px;">x(t) = v₀cos(θ)·t</div>
+              <div class="formula">y(t) = v₀sin(θ)·t − ½gt²</div>
+              <div class="formula">vx(t) = v₀cos(θ) [const]</div>
+              <div class="formula">vy(t) = v₀sin(θ) − gt</div>
+            </div>
+            <div class="info-note">
+              <strong style="color:var(--chart-4);">With Drag (RK4)</strong>
+              <div class="formula" style="margin-top:6px;">F_drag = ½ρC<sub>d</sub>Av²</div>
+              <div class="formula">a = −g − (F_drag/m)·v̂</div>
+              <div class="formula">Direction: opposes velocity</div>
+              <div class="formula">ρ = 1.225 kg/m³ (Earth)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ COMPARISON PAGE ════════════ -->
+<div id="page-comparison" class="page">
+  <div class="container">
+    <div class="page-header">
+      <div class="icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+        </svg>
+      </div>
+      <h1>Multi-Angle Comparison</h1>
+      <p>Fixed velocity, compare trajectories across different launch angles</p>
+    </div>
+    <div class="grid-main">
+      <div>
+        <div class="card">
+          <div class="card-title">Settings</div>
+          <div class="form-group">
+            <div class="form-label">Initial Velocity <span class="form-value"><span id="cmpVelVal">25</span><span class="unit"> m/s</span></span></div>
+            <input type="range" id="cmpVel" min="5" max="60" step="1" value="25" oninput="onCmpChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label" style="margin-bottom:10px;">Select Angles</div>
+            <div id="cmpAngles" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+          <div class="info-note" style="margin-top:14px;">
+            <strong>Ball:</strong> <span id="cmpBallName">Volleyball</span><br>
+            <strong>Environment:</strong> Earth, with drag
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Trajectory Overlay — Velocity <span id="cmpVelLabel">25</span> m/s</div>
+          <div class="canvas-wrap"><canvas id="cmpCanvas" class="chart" style="height:420px;"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Data Comparison</div>
+          <table class="data-table" id="cmpTable"></table>
+        </div>
+        <div class="card">
+          <div class="card-title">Analysis</div>
+          <ul class="analysis-list">
+            <li>In frictionless theory, <strong>45°</strong> yields maximum range. With air drag, the optimal angle is typically <strong>less than 45°</strong> because horizontal velocity continuously decays.</li>
+            <li>Higher angles produce <strong>greater max height</strong> and longer flight time, but not necessarily greater range.</li>
+            <li>Landing speed with drag is <strong>lower than initial speed</strong> (energy dissipation). The difference grows with steeper angles.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ NET CLEARANCE PAGE ════════════ -->
+<div id="page-net" class="page">
+  <div class="container">
+    <div class="page-header">
+      <div class="icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+        </svg>
+      </div>
+      <h1>Minimum Net Clearance Speed</h1>
+      <p>Calculate the minimum initial velocity needed for the ball to just clear the net</p>
+    </div>
+    <div class="grid-main">
+      <div>
+        <div class="card">
+          <div class="card-title">Net Parameters</div>
+          <div class="form-group">
+            <div class="form-label">Net Distance <span class="form-value"><span id="netDistVal">9.0</span><span class="unit"> m</span></span></div>
+            <input type="range" id="netDist" min="3" max="20" step="0.5" value="9" oninput="onNetChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Net Height <span class="form-value"><span id="netHtVal">2.43</span><span class="unit"> m</span></span></div>
+            <input type="range" id="netHt" min="1" max="4" step="0.01" value="2.43" oninput="onNetChange()">
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">Launch Angle</div>
+          <div class="toggle-row" style="margin-bottom:12px;">
+            <div><div class="toggle-label">Auto-find optimal angle</div><div class="toggle-sub">Minimizes required speed</div></div>
+            <label class="switch"><input type="checkbox" id="netAuto" onchange="onNetChange()"><span class="slider"></span></label>
+          </div>
+          <div class="form-group" id="netAngleGroup">
+            <div class="form-label">Fixed Angle <span class="form-value"><span id="netAngVal">50</span><span class="unit">°</span></span></div>
+            <input type="range" id="netAng" min="10" max="80" step="1" value="50" oninput="onNetChange()">
+          </div>
+          <div id="netOptimalBox" class="info-note" style="display:none;background:rgba(30,64,175,0.06);border-color:var(--primary);">
+            <strong>Optimal angle: </strong><span id="netOptAng" style="font-family:var(--font-mono);font-weight:700;color:var(--primary);"></span>°
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">Ball Selection</div>
+          <select id="netBallSel" onchange="onNetChange()"></select>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Result</div>
+          <div class="stats-grid" id="netStats"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Clearance Trajectory</div>
+          <div class="canvas-wrap"><canvas id="netCanvas" class="chart" style="height:380px;"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Application Notes</div>
+          <ul class="analysis-list">
+            <li><strong>Volleyball spike:</strong> Men's net height is 2.43 m, attacker ~3–4 m from net. The system computes the minimum velocity to clear it.</li>
+            <li><strong>Auto-optimize:</strong> Iterates 5°–85° to find the angle requiring the least initial speed.</li>
+            <li><strong>Clearance margin:</strong> Shows the height difference between the ball and the net at the net's horizontal position. Zero = just grazing the top.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ DRAG ANALYSIS PAGE ════════════ -->
+<div id="page-drag" class="page">
+  <div class="container">
+    <div class="page-header">
+      <div class="icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
+        </svg>
+      </div>
+      <h1>Drag vs. No-Drag Comparison</h1>
+      <p>Quantify how air resistance reduces range, height, time, and speed</p>
+    </div>
+    <div class="grid-main">
+      <div>
+        <div class="card">
+          <div class="card-title">Launch Parameters</div>
+          <div class="form-group">
+            <div class="form-label">Angle <span class="form-value"><span id="dAngVal">45</span><span class="unit">°</span></span></div>
+            <input type="range" id="dAng" min="10" max="80" step="1" value="45" oninput="onDragChange()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Velocity <span class="form-value"><span id="dVelVal">30</span><span class="unit"> m/s</span></span></div>
+            <input type="range" id="dVel" min="5" max="60" step="0.5" value="30" oninput="onDragChange()">
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">Ball Selection</div>
+          <select id="dragBallSel" onchange="onDragChange()"></select>
+          <div style="margin-top:12px;display:flex;justify-content:center;">
+            <canvas id="dragBallPreview" width="100" height="100" style="width:80px;height:80px;"></canvas>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">Drag Formula</div>
+          <div class="info-note">
+            <span class="formula">F = ½ρC<sub>d</sub>Av²</span><br>
+            <span style="font-size:0.78rem;">ρ=1.225, A=π(d/2)², C<sub>d</sub> from ball type</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Drag-Induced Differences</div>
+          <div class="stats-grid" id="dragDiff"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Trajectory Comparison — <span id="dragLabel">45° / 30 m/s</span></div>
+          <div class="canvas-wrap"><canvas id="dragCanvas" class="chart" style="height:400px;"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Detailed Comparison</div>
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab(event,'dragTabTable')">Data Table</button>
+            <button class="tab" onclick="switchTab(event,'dragTabChart')">Bar Chart</button>
+          </div>
+          <div id="dragTabTable" class="tab-panel active">
+            <table class="data-table" id="dragTable"></table>
+          </div>
+          <div id="dragTabChart" class="tab-panel">
+            <div class="canvas-wrap"><canvas id="dragBar" class="chart" style="height:300px;"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Physics Analysis</div>
+          <ul class="analysis-list">
+            <li>Air drag always opposes velocity, causing the <strong>horizontal component to continuously decay</strong> (it stays constant in frictionless theory).</li>
+            <li>Range reduction is approximately <strong id="dragPct">—</strong>, the primary reason real-world spikes land shorter than theoretical predictions.</li>
+            <li>Lighter, larger-diameter, or higher-C<sub>d</sub> balls experience <strong>stronger drag effects</strong>. Use the selector to compare ball sensitivity.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+// ═══════════════════════════════════════════════════════════
+// PROJECTILE MOTION LAB — Single-File Physics Simulator
+// ═══════════════════════════════════════════════════════════
+
+// ── Physical constants ──
+const GRAVITY = { earth: 9.81, moon: 1.62 };
+const AIR_DENSITY = { earth: 1.225, moon: 0.0 };
+
+// ── Ball definitions with exact properties ──
+const BALLS = {
+  tableTennis: {
+    name: "Table Tennis Ball",
+    shortName: "Table Tennis",
+    diameter: 0.040,
+    mass: 0.0027,
+    cd: 0.42,
+    color: "#FF8C00",
+  },
+  volleyball: {
+    name: "Volleyball",
+    shortName: "Volleyball",
+    diameter: 0.210,
+    mass: 0.270,
+    cd: 0.40,
+    color: "#3B82F6",
+  },
+  softball: {
+    name: "Softball",
+    shortName: "Softball",
+    diameter: 0.097,
+    mass: 0.185,
+    cd: 0.48,
+    color: "#FBBF24",
+  },
+  basketball: {
+    name: "Basketball",
+    shortName: "Basketball",
+    diameter: 0.240,
+    mass: 0.625,
+    cd: 0.52,
+    color: "#EA580C",
+  },
+};
+const BALL_KEYS = Object.keys(BALLS);
+
+// ── Global state ──
+let simState = {
+  angle: 45,
+  velocity: 20,
+  mass: 0.270,
+  diameter: 0.210,
+  cd: 0.40,
+  ballKey: "volleyball",
+  gravity: "earth",
+  airResistance: true,
+};
+
+let cmpState = { velocity: 25, angles: [30, 45, 60] };
+const CMP_ANGLE_OPTS = [15, 30, 45, 60, 75];
+const CMP_COLORS = ["#1E40AF", "#F59E0B", "#16A34A", "#DC2626", "#8B5CF6"];
+
+let netState = { distance: 9, height: 2.43, angle: 50, auto: false, ballKey: "volleyball" };
+let dragState = { angle: 45, velocity: 30, ballKey: "volleyball" };
+
+// ═══════════════════════════════════════════════════════════
+// PHYSICS ENGINE
+// ═══════════════════════════════════════════════════════════
+
+const degToRad = d => (d * Math.PI) / 180;
+const crossSectionArea = dia => Math.PI * Math.pow(dia / 2, 2);
+
+function simulateNoDrag(angle, velocity, gravityBody) {
+  const g = GRAVITY[gravityBody];
+  const th = degToRad(angle);
+  const vx0 = velocity * Math.cos(th);
+  const vy0 = velocity * Math.sin(th);
+  const flightTime = (2 * vy0) / g;
+  const maxHeight = Math.pow(vy0, 2) / (2 * g);
+  const maxRange = vx0 * flightTime;
+  const points = [];
+  const steps = Math.max(100, Math.ceil(flightTime / 0.02));
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * flightTime;
+    const x = vx0 * t;
+    const y = vy0 * t - 0.5 * g * t * t;
+    const vx = vx0;
+    const vy = vy0 - g * t;
+    points.push({ t, x, y, vx, vy, speed: Math.sqrt(vx*vx + vy*vy) });
+    if (y < 0 && i > 0) break;
+  }
+  return {
+    points, maxRange, maxHeight, flightTime,
+    landingSpeed: Math.sqrt(vx0*vx0 + vy0*vy0),
+    landingVx: vx0, landingVy: -vy0,
+  };
+}
+
+function acceleration(vx, vy, mass, diameter, cd, gravityBody) {
+  const g = GRAVITY[gravityBody];
+  const rho = AIR_DENSITY[gravityBody];
+  const A = crossSectionArea(diameter);
+  const speed = Math.sqrt(vx*vx + vy*vy);
+  const dragFactor = (0.5 * rho * cd * A * speed) / mass;
+  return [(-dragFactor * vx), (-g - dragFactor * vy)];
+}
+
+function rk4Step(state, dt, mass, diameter, cd, gravityBody) {
+  const [x, y, vx, vy] = state;
+  const a1 = acceleration(vx, vy, mass, diameter, cd, gravityBody);
+  const k1 = [vx, vy, a1[0], a1[1]];
+  const a2 = acceleration(vx + 0.5*dt*k1[2], vy + 0.5*dt*k1[3], mass, diameter, cd, gravityBody);
+  const k2 = [vx + 0.5*dt*k1[2], vy + 0.5*dt*k1[3], a2[0], a2[1]];
+  const a3 = acceleration(vx + 0.5*dt*k2[2], vy + 0.5*dt*k2[3], mass, diameter, cd, gravityBody);
+  const k3 = [vx + 0.5*dt*k2[2], vy + 0.5*dt*k2[3], a3[0], a3[1]];
+  const a4 = acceleration(vx + dt*k3[2], vy + dt*k3[3], mass, diameter, cd, gravityBody);
+  const k4 = [vx + dt*k3[2], vy + dt*k3[3], a4[0], a4[1]];
+  return [
+    x + (dt/6)*(k1[0] + 2*k2[0] + 2*k3[0] + k4[0]),
+    y + (dt/6)*(k1[1] + 2*k2[1] + 2*k3[1] + k4[1]),
+    vx + (dt/6)*(k1[2] + 2*k2[2] + 2*k3[2] + k4[2]),
+    vy + (dt/6)*(k1[3] + 2*k2[3] + 2*k3[3] + k4[3]),
+  ];
+}
+
+function simulateWithDrag(angle, velocity, mass, diameter, cd, gravityBody) {
+  const th = degToRad(angle);
+  let state = [0, 0, velocity * Math.cos(th), velocity * Math.sin(th)];
+  const dt = 0.01;
+  const points = [{ t:0, x:0, y:0, vx:state[2], vy:state[3], speed: Math.sqrt(state[2]**2+state[3]**2) }];
+  let t = 0, maxHeight = 0;
+  const maxTime = 120;
+  while (state[1] >= 0 && t < maxTime) {
+    state = rk4Step(state, dt, mass, diameter, cd, gravityBody);
+    t += dt;
+    const speed = Math.sqrt(state[2]**2 + state[3]**2);
+    points.push({ t, x:state[0], y:state[1], vx:state[2], vy:state[3], speed });
+    if (state[1] > maxHeight) maxHeight = state[1];
+    if (state[1] < 0 && points.length > 1) {
+      const prev = points[points.length - 2];
+      const curr = points[points.length - 1];
+      const ratio = prev.y / (prev.y - curr.y);
+      const lx = prev.x + ratio*(curr.x - prev.x);
+      const lt = prev.t + ratio*(curr.t - prev.t);
+      const lvx = prev.vx + ratio*(curr.vx - prev.vx);
+      const lvy = prev.vy + ratio*(curr.vy - prev.vy);
+      const lspeed = Math.sqrt(lvx*lx + lvy*lvy);
+      points[points.length-1] = { t:lt, x:lx, y:0, vx:lvx, vy:lvy, speed:Math.sqrt(lvx*lvx+lvy*lvy) };
+      return { points, maxRange:lx, maxHeight, flightTime:lt, landingSpeed:Math.sqrt(lvx*lvx+lvy*lvy), landingVx:lvx, landingVy:lvy };
+    }
+  }
+  const last = points[points.length-1];
+  return { points, maxRange:last.x, maxHeight, flightTime:t, landingSpeed:last.speed, landingVx:last.vx, landingVy:last.vy };
+}
+
+function simulate(angle, velocity, mass, diameter, cd, gravityBody, useDrag) {
+  if (useDrag && AIR_DENSITY[gravityBody] > 0) {
+    return simulateWithDrag(angle, velocity, mass, diameter, cd, gravityBody);
+  }
+  return simulateNoDrag(angle, velocity, gravityBody);
+}
+
+// ── Net clearance: binary search for min speed ──
+function heightAtX(traj, targetX) {
+  for (let i = 1; i < traj.points.length; i++) {
+    if (traj.points[i].x >= targetX) {
+      const prev = traj.points[i-1], curr = traj.points[i];
+      const ratio = (targetX - prev.x) / (curr.x - prev.x);
+      return prev.y + ratio * (curr.y - prev.y);
+    }
+  }
+  return null;
+}
+
+function calcMinNetSpeed(distance, height, angle, mass, diameter, cd, gravityBody) {
+  let lo = 1, hi = 200, result = null;
+  const check = v => {
+    const traj = simulate(angle, v, mass, diameter, cd, gravityBody, true);
+    const yAtNet = heightAtX(traj, distance);
+    return yAtNet !== null && yAtNet >= height;
+  };
+  if (!check(hi)) return null;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (check(mid)) { hi = mid; result = mid; }
+    else lo = mid;
+  }
+  if (result === null) return null;
+  const traj = simulate(angle, result, mass, diameter, cd, gravityBody, true);
+  return { speed: result, trajectory: traj };
+}
+
+function findOptimalNetAngle(distance, height, mass, diameter, cd, gravityBody) {
+  let best = null;
+  for (let a = 5; a <= 85; a += 1) {
+    const r = calcMinNetSpeed(distance, height, a, mass, diameter, cd, gravityBody);
+    if (r && (!best || r.speed < best.speed)) best = { angle: a, speed: r.speed };
+  }
+  return best;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BALL TEXTURE RENDERING (Canvas)
+// ═══════════════════════════════════════════════════════════
+
+function drawBall(ctx, cx, cy, r, key) {
+  r = Math.max(2, r);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  if (key === "tableTennis") drawTableTennis(ctx, cx, cy, r);
+  else if (key === "volleyball") drawVolleyball(ctx, cx, cy, r);
+  else if (key === "softball") drawSoftball(ctx, cx, cy, r);
+  else if (key === "basketball") drawBasketball(ctx, cx, cy, r);
+
+  ctx.restore();
+
+  // Edge highlight
+  const grad = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.1, cx, cy, r);
+  grad.addColorStop(0, "rgba(255,255,255,0.25)");
+  grad.addColorStop(0.5, "rgba(255,255,255,0)");
+  grad.addColorStop(1, "rgba(0,0,0,0.15)");
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(0,0,0,0.18)";
+  ctx.lineWidth = Math.max(0.5, r * 0.02);
+  ctx.stroke();
+}
+
+// Table Tennis: smooth matte white/orange with equatorial seam
+function drawTableTennis(ctx, cx, cy, r) {
+  ctx.fillStyle = "#FF8C00";
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  // Matte texture (subtle noise dots)
+  ctx.fillStyle = "rgba(255,255,255,0.04)";
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.random() * r;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a)*d, cy + Math.sin(a)*d, r*0.02, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Equatorial seam
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r, r * 0.12, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(120,60,0,0.35)";
+  ctx.lineWidth = Math.max(0.5, r * 0.03);
+  ctx.stroke();
+}
+
+// Volleyball: 18-panel alternating blue/yellow/white
+function drawVolleyball(ctx, cx, cy, r) {
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  const panelColors = ["#3B82F6", "#FBBF24", "#FFFFFF"];
+  // Draw curved panels radiating from center — 18 panels
+  const numPanels = 18;
+  for (let i = 0; i < numPanels; i++) {
+    const a1 = (i / numPanels) * Math.PI * 2;
+    const a2 = ((i + 1) / numPanels) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    // Curved outer edge
+    const midA = (a1 + a2) / 2;
+    ctx.arc(cx, cy, r * 0.6, a1, a2);
+    const outerR = r * (0.85 + 0.15 * Math.sin(i * 3));
+    ctx.lineTo(cx + Math.cos(a2) * outerR, cy + Math.sin(a2) * outerR);
+    ctx.arc(cx, cy, outerR, a2, a1, true);
+    ctx.closePath();
+    ctx.fillStyle = panelColors[i % 3];
+    ctx.fill();
+  }
+  // Seam lines
+  ctx.strokeStyle = "rgba(30,58,138,0.4)";
+  ctx.lineWidth = Math.max(0.4, r * 0.015);
+  for (let i = 0; i < numPanels; i++) {
+    const a = (i / numPanels) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.stroke();
+  }
+}
+
+// Softball: optic yellow with red stitching curves
+function drawSoftball(ctx, cx, cy, r) {
+  ctx.fillStyle = "#FBBF24";
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  // Leather grain
+  ctx.fillStyle = "rgba(180,120,0,0.06)";
+  for (let i = 0; i < 80; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.random() * r * 0.95;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a)*d, cy + Math.sin(a)*d, r*0.015, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Two curved seam lines (figure-8 pattern)
+  ctx.strokeStyle = "#DC2626";
+  ctx.lineWidth = Math.max(1, r * 0.04);
+  ctx.lineCap = "round";
+  // Left curve
+  ctx.beginPath();
+  ctx.arc(cx - r*0.3, cy, r*0.7, -Math.PI*0.4, Math.PI*0.4);
+  ctx.stroke();
+  // Right curve (mirrored)
+  ctx.beginPath();
+  ctx.arc(cx + r*0.3, cy, r*0.7, Math.PI*0.6, Math.PI*1.4);
+  ctx.stroke();
+  // Stitch marks (small perpendicular ticks)
+  ctx.strokeStyle = "#B91C1C";
+  ctx.lineWidth = Math.max(0.5, r * 0.02);
+  for (let side = -1; side <= 1; side += 2) {
+    const baseX = cx + side * r * 0.3;
+    for (let i = 0; i < 12; i++) {
+      const a = -Math.PI*0.4 + (i/11) * Math.PI*0.8;
+      const px = baseX + Math.cos(a) * r * 0.7;
+      const py = cy + Math.sin(a) * r * 0.7;
+      const perpA = a + Math.PI/2 * side;
+      ctx.beginPath();
+      ctx.moveTo(px - Math.cos(perpA)*r*0.06, py - Math.sin(perpA)*r*0.06);
+      ctx.lineTo(px + Math.cos(perpA)*r*0.06, py + Math.sin(perpA)*r*0.06);
+      ctx.stroke();
+    }
+  }
+}
+
+// Basketball: pebbled orange with black ribs
+function drawBasketball(ctx, cx, cy, r) {
+  ctx.fillStyle = "#EA580C";
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  // Pebbled surface
+  ctx.fillStyle = "rgba(120,40,0,0.18)";
+  const pebbleSize = Math.max(1, r * 0.035);
+  for (let i = 0; i < 200; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.random() * r * 0.98;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a)*d, cy + Math.sin(a)*d, pebbleSize, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(255,200,150,0.12)";
+  for (let i = 0; i < 150; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.random() * r * 0.98;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a)*d, cy + Math.sin(a)*d, pebbleSize*0.7, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Black curved ribs (4 main seams)
+  ctx.strokeStyle = "#1A1A1A";
+  ctx.lineWidth = Math.max(1.5, r * 0.045);
+  ctx.lineCap = "round";
+  // Vertical center rib
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r);
+  ctx.quadraticCurveTo(cx + r*0.05, cy, cx, cy + r);
+  ctx.stroke();
+  // Horizontal center rib (curved as ellipse)
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r * 0.98, r * 0.15, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // Two curved side ribs
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r * 0.5, r * 0.95, Math.PI / 6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r * 0.5, r * 0.95, -Math.PI / 6, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function setupCanvas(canvas, height) {
+  const rect = canvas.getBoundingClientRect();
+  // Skip hidden canvases (display:none has zero width) — caller must re-render when visible
+  if (!rect.width || !rect.height) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const w = rect.width;
+  canvas.width = w * dpr;
+  canvas.height = height * dpr;
+  canvas.style.height = height + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h: height };
+}
+
+// ═══════════════════════════════════════════════════════════
+// TRAJECTORY CANVAS RENDERER
+// ═══════════════════════════════════════════════════════════
+
+const trajAnimations = {};
+
+function drawTrajectories(canvas, trajectories, opts) {
+  opts = opts || {};
+  const height = opts.height || 380;
+  const showGrid = opts.showGrid !== false;
+  const net = opts.net || null;
+  const animId = opts.animId || canvas.id;
+
+  // Cancel previous animation
+  if (trajAnimations[animId]) cancelAnimationFrame(trajAnimations[animId]);
+
+  const setup = setupCanvas(canvas, height);
+  if (!setup) return;              // canvas is hidden — will be re-rendered when shown
+  const { ctx, w, h } = setup;
+  const allPoints = trajectories.flatMap(t => t.result.points);
+  if (allPoints.length === 0) return;
+
+  const maxX = Math.max(...allPoints.map(p => p.x), 1) * 1.1;
+  const maxY = Math.max(...allPoints.map(p => p.y), net ? net.height : 0, 1) * 1.2;
+
+  const padL = 50, padR = 20, padT = 20, padB = 40;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const scale = Math.min(plotW / maxX, plotH / maxY);
+  const toX = x => padL + x * scale;
+  const toY = y => h - padB - y * scale;
+
+  let progress = 0;
+
+  function frame() {
+    ctx.clearRect(0, 0, w, h);
+    // Background
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, "#F0F4FF");
+    bg.addColorStop(1, "#FAFCFF");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid
+    if (showGrid) {
+      ctx.strokeStyle = "#E2E8F0";
+      ctx.lineWidth = 1;
+      ctx.font = "11px var(--font-mono)";
+      ctx.fillStyle = "#64748B";
+      const xStep = niceStep(maxX);
+      const yStep = niceStep(maxY);
+      for (let x = 0; x <= maxX; x += xStep) {
+        const cx = toX(x);
+        ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, h - padB); ctx.stroke();
+        if (x > 0) { ctx.textAlign = "center"; ctx.fillText(fmtNum(x), cx, h - padB + 15); }
+      }
+      for (let y = 0; y <= maxY; y += yStep) {
+        const cy = toY(y);
+        ctx.beginPath(); ctx.moveTo(padL, cy); ctx.lineTo(w - padR, cy); ctx.stroke();
+        if (y > 0) { ctx.textAlign = "right"; ctx.fillText(fmtNum(y), padL - 5, cy + 4); }
+      }
+      // Axes
+      ctx.strokeStyle = "#1E3A8A"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB); ctx.stroke();
+      // Labels
+      ctx.fillStyle = "#1E3A8A"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("Horizontal Distance x (m)", w / 2, h - 5);
+      ctx.save(); ctx.translate(15, h / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillText("Height y (m)", 0, 0); ctx.restore();
+    }
+
+    // Net
+    if (net) {
+      const nx = toX(net.distance);
+      ctx.strokeStyle = "#16A34A"; ctx.lineWidth = 3; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(nx, toY(0)); ctx.lineTo(nx, toY(net.height)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#16A34A";
+      ctx.beginPath(); ctx.arc(nx, toY(net.height), 4, 0, Math.PI * 2); ctx.fill();
+      ctx.font = "11px monospace"; ctx.textAlign = "left";
+      ctx.fillText("Net " + net.height + "m", nx + 8, toY(net.height));
+    }
+
+    // Trajectories
+    trajectories.forEach(t => {
+      const pts = t.result.points;
+      if (pts.length < 2) return;
+      const drawCount = Math.max(2, Math.floor(pts.length * progress));
+      ctx.strokeStyle = t.color; ctx.lineWidth = 2.5;
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(toX(pts[0].x), toY(pts[0].y));
+      for (let i = 1; i < drawCount; i++) ctx.lineTo(toX(pts[i].x), toY(pts[i].y));
+      ctx.stroke();
+      // Ball at current/end position
+      if (progress >= 1 || drawCount < pts.length) {
+        const bp = pts[Math.min(drawCount - 1, pts.length - 1)];
+        ctx.fillStyle = t.color;
+        ctx.beginPath(); ctx.arc(toX(bp.x), toY(bp.y), 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+      // Label
+      if (progress >= 0.5) {
+        const li = Math.floor(pts.length * 0.3);
+        const lp = pts[li];
+        if (lp) {
+          ctx.fillStyle = t.color; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "left";
+          ctx.fillText(t.label, toX(lp.x) + 8, toY(lp.y) - 8);
+        }
+      }
+    });
+
+    // Legend
+    if (trajectories.length > 1 && progress >= 0.3) {
+      const lx = w - padR - 130, ly = padT + 8;
+      ctx.font = "12px sans-serif";
+      trajectories.forEach((t, i) => {
+        const y = ly + i * 20;
+        ctx.fillStyle = t.color; ctx.fillRect(lx, y, 16, 3);
+        ctx.fillStyle = "#334155"; ctx.textAlign = "left";
+        ctx.fillText(t.label, lx + 22, y + 4);
+      });
+    }
+
+    if (progress < 1) {
+      progress = Math.min(1, progress + 0.03);
+      trajAnimations[animId] = requestAnimationFrame(frame);
+    }
+  }
+  frame();
+}
+
+function niceStep(maxVal) {
+  const raw = maxVal / 8;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  let step;
+  if (norm < 1.5) step = 1;
+  else if (norm < 3) step = 2;
+  else if (norm < 7) step = 5;
+  else step = 10;
+  return step * mag;
+}
+function fmtNum(v) {
+  if (v < 1) return v.toFixed(1);
+  if (v < 10) return v.toFixed(1);
+  return Math.round(v).toString();
+}
+
+// ═══════════════════════════════════════════════════════════
+// VELOCITY CHART RENDERER (Line chart on canvas)
+// ═══════════════════════════════════════════════════════════
+
+function drawVelChart(canvas, points, series) {
+  // series: [{key:'vx', label:'vx', color:'#1E40AF'}, ...]
+  const setup = setupCanvas(canvas, 280);
+  if (!setup) return;              // hidden canvas — re-render when tab becomes visible
+  const { ctx, w, h } = setup;
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 50, padR = 20, padT = 15, padB = 35;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  const sampled = points.filter((_, i) => i % 3 === 0);
+  if (sampled.length === 0) return;
+
+  const tMax = sampled[sampled.length - 1].t;
+  let vMin = Infinity, vMax = -Infinity;
+  series.forEach(s => {
+    sampled.forEach(p => {
+      if (p[s.key] < vMin) vMin = p[s.key];
+      if (p[s.key] > vMax) vMax = p[s.key];
+    });
+  });
+  if (vMin > 0) vMin = 0;
+  if (vMax < 0) vMax = 0;
+  const vRange = vMax - vMin || 1;
+  vMax += vRange * 0.1; vMin -= vRange * 0.1;
+
+  const toX = t => padL + (t / tMax) * plotW;
+  const toY = v => padT + plotH - ((v - vMin) / (vMax - vMin)) * plotH;
+
+  // Grid
+  ctx.strokeStyle = "#E2E8F0"; ctx.lineWidth = 1; ctx.font = "11px monospace"; ctx.fillStyle = "#64748B";
+  const yStep = niceStep(vMax - vMin);
+  for (let v = Math.ceil(vMin / yStep) * yStep; v <= vMax; v += yStep) {
+    const cy = toY(v);
+    ctx.beginPath(); ctx.moveTo(padL, cy); ctx.lineTo(w - padR, cy); ctx.stroke();
+    ctx.textAlign = "right"; ctx.fillText(v.toFixed(0), padL - 5, cy + 4);
+  }
+  const tStep = niceStep(tMax);
+  for (let t = 0; t <= tMax; t += tStep) {
+    const cx = toX(t);
+    ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, padT + plotH); ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillText(t.toFixed(1), cx, h - padB + 15);
+  }
+
+  // Zero line
+  if (vMin < 0 && vMax > 0) {
+    ctx.strokeStyle = "#94A3B8"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(padL, toY(0)); ctx.lineTo(w - padR, toY(0)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Axes
+  ctx.strokeStyle = "#1E3A8A"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(w - padR, padT + plotH); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = "#1E3A8A"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("Time t (s)", (padL + w - padR) / 2, h - 5);
+  ctx.save(); ctx.translate(14, padT + plotH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText("Velocity (m/s)", 0, 0); ctx.restore();
+
+  // Lines
+  series.forEach(s => {
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    if (s.dash) ctx.setLineDash(s.dash); else ctx.setLineDash([]);
+    ctx.beginPath();
+    sampled.forEach((p, i) => {
+      const x = toX(p.t), y = toY(p[s.key]);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Legend
+  ctx.font = "12px sans-serif";
+  const lx = w - padR - 120, ly = padT + 5;
+  series.forEach((s, i) => {
+    const y = ly + i * 20;
+    ctx.strokeStyle = s.color; ctx.lineWidth = 3;
+    if (s.dash) ctx.setLineDash(s.dash); else ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(lx, y + 2); ctx.lineTo(lx + 16, y + 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#334155"; ctx.textAlign = "left";
+    ctx.fillText(s.label, lx + 22, y + 5);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// BAR CHART RENDERER
+// ═══════════════════════════════════════════════════════════
+
+function drawBarChart(canvas, data, series, unit) {
+  // data: [{label, val1, val2}], series: [{key, label, color}]
+  const setup = setupCanvas(canvas, 300);
+  if (!setup) return;              // hidden canvas — re-render when tab becomes visible
+  const { ctx, w, h } = setup;
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 55, padR = 20, padT = 20, padB = 50;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  let maxVal = 0;
+  data.forEach(d => series.forEach(s => { if (d[s.key] > maxVal) maxVal = d[s.key]; }));
+  maxVal *= 1.15;
+
+  const groupW = plotW / data.length;
+  const barW = (groupW * 0.6) / series.length;
+  const toY = v => padT + plotH - (v / maxVal) * plotH;
+
+  // Grid
+  ctx.strokeStyle = "#E2E8F0"; ctx.lineWidth = 1; ctx.font = "11px monospace"; ctx.fillStyle = "#64748B";
+  const yStep = niceStep(maxVal);
+  for (let v = 0; v <= maxVal; v += yStep) {
+    const cy = toY(v);
+    ctx.beginPath(); ctx.moveTo(padL, cy); ctx.lineTo(w - padR, cy); ctx.stroke();
+    ctx.textAlign = "right"; ctx.fillText(v.toFixed(1), padL - 5, cy + 4);
+  }
+
+  // Axis
+  ctx.strokeStyle = "#1E3A8A"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(w - padR, padT + plotH); ctx.stroke();
+  ctx.fillStyle = "#1E3A8A"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
+
+  // Bars
+  data.forEach((d, di) => {
+    const groupX = padL + di * groupW + groupW * 0.2;
+    series.forEach((s, si) => {
+      const val = d[s.key];
+      const bx = groupX + si * barW;
+      const by = toY(val);
+      const bh = padT + plotH - by;
+      // Rounded top
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      const r = Math.min(4, barW / 2);
+      ctx.moveTo(bx, by + r);
+      ctx.arcTo(bx, by, bx + r, by, r);
+      ctx.lineTo(bx + barW - r, by);
+      ctx.arcTo(bx + barW, by, bx + barW, by + r, r);
+      ctx.lineTo(bx + barW, padT + plotH);
+      ctx.lineTo(bx, padT + plotH);
+      ctx.closePath();
+      ctx.fill();
+    });
+    // Label
+    ctx.fillStyle = "#334155"; ctx.font = "11px sans-serif";
+    ctx.fillText(d.label, padL + di * groupW + groupW / 2, h - padB + 18);
+  });
+
+  // Legend
+  ctx.font = "12px sans-serif";
+  const lx = padL + 10, ly = padT - 8;
+  // (legend at top, horizontal)
+  let legX = lx;
+  series.forEach(s => {
+    ctx.fillStyle = s.color;
+    ctx.fillRect(legX, ly, 14, 4);
+    ctx.fillStyle = "#334155"; ctx.textAlign = "left";
+    ctx.fillText(s.label, legX + 20, ly + 5);
+    legX += 20 + ctx.measureText(s.label).width + 20;
+  });
+
+  // Y label
+  ctx.save(); ctx.translate(14, padT + plotH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = "#1E3A8A"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText(unit || "", 0, 0); ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI BUILDING
+// ═══════════════════════════════════════════════════════════
+
+function showPage(pageId) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + pageId).classList.add("active");
+  document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+  document.querySelector('.nav-link[data-page="' + pageId + '"]').classList.add("active");
+  window.scrollTo(0, 0);
+  // Trigger renders
+  setTimeout(() => {
+    if (pageId === "simulator") renderSimulator();
+    else if (pageId === "comparison") renderComparison();
+    else if (pageId === "net") renderNetClearance();
+    else if (pageId === "drag") renderDragAnalysis();
+  }, 50);
+}
+
+function switchTab(evt, panelId) {
+  const tabs = evt.target.parentElement.querySelectorAll(".tab");
+  tabs.forEach(t => t.classList.remove("active"));
+  evt.target.classList.add("active");
+  const panels = evt.target.parentElement.parentElement.querySelectorAll(".tab-panel");
+  panels.forEach(p => p.classList.remove("active"));
+  document.getElementById(panelId).classList.add("active");
+  // Re-render charts now that the panel is visible (hidden canvases have zero width)
+  requestAnimationFrame(() => {
+    if (panelId === "simTabAll") drawVelChartIfVisible("velChartAll");
+    else if (panelId === "simTabComp") drawVelChartIfVisible("velChartComp");
+    else if (panelId === "simTabH") drawVelChartIfVisible("velChartH");
+    else if (panelId === "dragTabChart") renderDragBar();
+  });
+}
+
+// ── Build ball selector ──
+function buildBallSelector() {
+  const container = document.getElementById("ballSelector");
+  container.innerHTML = "";
+  BALL_KEYS.forEach(key => {
+    const ball = BALLS[key];
+    const div = document.createElement("div");
+    div.className = "ball-option" + (simState.ballKey === key ? " selected" : "");
+    div.onclick = () => selectBall(key);
+    const cv = document.createElement("canvas");
+    cv.width = 88; cv.height = 88;
+    div.appendChild(cv);
+    const info = document.createElement("div");
+    info.className = "ball-info";
+    info.innerHTML = '<div class="ball-name">' + ball.shortName + '</div>' +
+      '<div class="ball-spec">⌀' + (ball.diameter*1000).toFixed(0) + 'mm · ' + (ball.mass*1000).toFixed(0) + 'g · Cd=' + ball.cd + '</div>';
+    div.appendChild(info);
+    container.appendChild(div);
+    // Draw mini ball
+    const mctx = cv.getContext("2d");
+    mctx.scale(2, 2);
+    drawBall(mctx, 22, 22, 20, key);
+  });
+}
+
+function selectBall(key) {
+  simState.ballKey = key;
+  const ball = BALLS[key];
+  // Auto-populate physics params but keep sliders editable
+  simState.mass = ball.mass;
+  simState.diameter = ball.diameter;
+  simState.cd = ball.cd;
+  // Update sliders
+  document.getElementById("ctrlMass").value = ball.mass;
+  document.getElementById("ctrlDia").value = ball.diameter;
+  document.getElementById("ctrlCd").value = ball.cd;
+  // Update ball selects on other pages
+  if (document.getElementById("netBallSel")) document.getElementById("netBallSel").value = key;
+  if (document.getElementById("dragBallSel")) document.getElementById("dragBallSel").value = key;
+  netState.ballKey = key;
+  dragState.ballKey = key;
+  buildBallSelector();
+  renderSimulator();
+}
+
+function buildBallSelectDropdowns() {
+  ["netBallSel", "dragBallSel"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    BALL_KEYS.forEach(key => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = BALLS[key].name;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIMULATOR PAGE
+// ═══════════════════════════════════════════════════════════
+
+function onSimParamChange() {
+  simState.angle = parseFloat(document.getElementById("ctrlAngle").value);
+  simState.velocity = parseFloat(document.getElementById("ctrlVel").value);
+  simState.mass = parseFloat(document.getElementById("ctrlMass").value);
+  simState.diameter = parseFloat(document.getElementById("ctrlDia").value);
+  simState.cd = parseFloat(document.getElementById("ctrlCd").value);
+  simState.gravity = document.getElementById("ctrlGravity").value;
+  simState.airResistance = document.getElementById("ctrlDrag").checked;
+  renderSimulator();
+}
+
+function renderSimulator() {
+  // Update value displays
+  document.getElementById("valAngle").textContent = simState.angle;
+  document.getElementById("valVel").textContent = simState.velocity;
+  document.getElementById("valMass").textContent = simState.mass.toFixed(3);
+  document.getElementById("valDia").textContent = simState.diameter.toFixed(3);
+  document.getElementById("valCd").textContent = simState.cd.toFixed(2);
+
+  // Drag sub text
+  const dragSub = document.getElementById("dragSub");
+  const dragCheckbox = document.getElementById("ctrlDrag");
+  if (simState.gravity === "moon") {
+    dragSub.textContent = "Moon ≈ vacuum, drag negligible";
+    dragCheckbox.disabled = true;
+  } else {
+    dragSub.textContent = "Density ρ = 1.225 kg/m³";
+    dragCheckbox.disabled = false;
+  }
+
+  // Ball preview
+  const ball = BALLS[simState.ballKey];
+  const pvCanvas = document.getElementById("ballPreview");
+  const pvCtx = pvCanvas.getContext("2d");
+  pvCtx.clearRect(0, 0, 240, 240);
+  drawBall(pvCtx, 120, 120, 100, simState.ballKey);
+  document.getElementById("ballPreviewName").textContent = ball.name;
+  document.getElementById("bpDia").textContent = (ball.diameter).toFixed(3) + " m";
+  document.getElementById("bpMass").textContent = (ball.mass).toFixed(3) + " kg";
+  document.getElementById("bpCd").textContent = ball.cd.toFixed(2);
+
+  // Model badge
+  const hasDrag = simState.airResistance && simState.gravity === "earth";
+  document.getElementById("modelBadge").textContent = hasDrag ? "With Drag (RK4)" : "Frictionless (Theory)";
+
+  // Simulate
+  const result = simulate(simState.angle, simState.velocity, simState.mass, simState.diameter, simState.cd, simState.gravity, simState.airResistance);
+
+  // Draw trajectory
+  drawTrajectories(document.getElementById("simCanvas"), [{
+    result, color: "#1E40AF", label: simState.angle + "° / " + simState.velocity + " m/s"
+  }], { height: 380, animId: "simCanvas" });
+
+  // Stats
+  const statsHtml = [
+    { l: "Range", v: result.maxRange, u: "m", c: "var(--chart-1)" },
+    { l: "Max Height", v: result.maxHeight, u: "m", c: "var(--chart-2)" },
+    { l: "Flight Time", v: result.flightTime, u: "s", c: "var(--chart-3)" },
+    { l: "Landing Speed", v: result.landingSpeed, u: "m/s", c: "var(--chart-4)" },
+    { l: "Landing Vx", v: result.landingVx, u: "m/s", c: "var(--chart-5)" },
+    { l: "Landing Vy", v: Math.abs(result.landingVy), u: "m/s", c: "var(--accent)" },
+  ].map(s => '<div class="stat-box"><div class="stat-label">' + s.l + '</div><div class="stat-val" style="color:' + s.c + '">' + s.v.toFixed(2) + '<span class="stat-unit">' + s.u + '</span></div></div>').join("");
+  document.getElementById("simStats").innerHTML = statsHtml;
+
+  // Store for vel charts
+  simState._result = result;
+  renderVelCharts();
+}
+
+function buildVelData() {
+  const result = simState._result;
+  if (!result) return null;
+  return result.points.filter((_, i) => i % 2 === 0).map(p => ({
+    t: parseFloat(p.t.toFixed(2)),
+    vx: parseFloat(p.vx.toFixed(2)),
+    vy: parseFloat(p.vy.toFixed(2)),
+    speed: parseFloat(p.speed.toFixed(2)),
+  }));
+}
+
+const VEL_SERIES = {
+  velChartAll: [
+    { key: "vx", label: "Horizontal vx", color: "#1E40AF" },
+    { key: "vy", label: "Vertical vy", color: "#DC2626" },
+    { key: "speed", label: "Magnitude |v|", color: "#F59E0B", dash: [5, 3] },
+  ],
+  velChartComp: [
+    { key: "vx", label: "Horizontal vx", color: "#1E40AF" },
+    { key: "vy", label: "Vertical vy", color: "#DC2626" },
+  ],
+  velChartH: [
+    { key: "vx", label: "Horizontal vx", color: "#1E40AF" },
+  ],
+};
+
+function drawVelChartIfVisible(canvasId) {
+  const data = buildVelData();
+  if (!data) return;
+  drawVelChart(document.getElementById(canvasId), data, VEL_SERIES[canvasId]);
+}
+
+function renderVelCharts() {
+  // Only redraw canvases that currently have a layout box (visible panels)
+  Object.keys(VEL_SERIES).forEach(drawVelChartIfVisible);
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPARISON PAGE
+// ═══════════════════════════════════════════════════════════
+
+function buildCmpAngleCheckboxes() {
+  const container = document.getElementById("cmpAngles");
+  container.innerHTML = "";
+  CMP_ANGLE_OPTS.forEach((a, i) => {
+    const label = document.createElement("label");
+    label.className = "check-row";
+    const checked = cmpState.angles.includes(a);
+    label.innerHTML =
+      '<input type="checkbox" ' + (checked ? "checked" : "") + ' onchange="toggleCmpAngle(' + a + ', this.checked)">' +
+      '<span class="check-color" style="background:' + CMP_COLORS[i] + '"></span>' +
+      '<span style="font-size:0.85rem;">' + a + '°</span>';
+    container.appendChild(label);
+  });
+}
+
+function toggleCmpAngle(angle, checked) {
+  if (checked) {
+    if (!cmpState.angles.includes(angle)) cmpState.angles.push(angle);
+  } else {
+    cmpState.angles = cmpState.angles.filter(a => a !== angle);
+  }
+  cmpState.angles.sort((a, b) => a - b);
+  buildCmpAngleCheckboxes();
+  renderComparison();
+}
+
+function onCmpChange() {
+  cmpState.velocity = parseFloat(document.getElementById("cmpVel").value);
+  document.getElementById("cmpVelVal").textContent = cmpState.velocity;
+  document.getElementById("cmpVelLabel").textContent = cmpState.velocity;
+  renderComparison();
+}
+
+function renderComparison() {
+  const ball = BALLS[simState.ballKey];
+  document.getElementById("cmpBallName").textContent = ball.name;
+
+  const trajectories = cmpState.angles.map((a, i) => ({
+    result: simulate(a, cmpState.velocity, ball.mass, ball.diameter, ball.cd, "earth", true),
+    color: CMP_COLORS[i % CMP_COLORS.length],
+    label: a + "°",
+  }));
+
+  drawTrajectories(document.getElementById("cmpCanvas"), trajectories, { height: 420, animId: "cmpCanvas" });
+
+  // Table
+  const tableEl = document.getElementById("cmpTable");
+  let html = '<thead><tr><th>Angle</th><th class="right">Range (m)</th><th class="right">Max Height (m)</th><th class="right">Flight Time (s)</th><th class="right">Landing (m/s)</th></tr></thead><tbody>';
+  trajectories.forEach((t, i) => {
+    html += '<tr><td><span class="check-color" style="background:' + t.color + ';display:inline-block;vertical-align:middle;margin-right:6px;"></span>' + t.label + '</td>';
+    html += '<td class="right mono">' + t.result.maxRange.toFixed(2) + '</td>';
+    html += '<td class="right mono">' + t.result.maxHeight.toFixed(2) + '</td>';
+    html += '<td class="right mono">' + t.result.flightTime.toFixed(2) + '</td>';
+    html += '<td class="right mono">' + t.result.landingSpeed.toFixed(2) + '</td></tr>';
+  });
+  html += '</tbody>';
+  tableEl.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// NET CLEARANCE PAGE
+// ═══════════════════════════════════════════════════════════
+
+function onNetChange() {
+  netState.distance = parseFloat(document.getElementById("netDist").value);
+  netState.height = parseFloat(document.getElementById("netHt").value);
+  netState.angle = parseFloat(document.getElementById("netAng").value);
+  netState.auto = document.getElementById("netAuto").checked;
+  netState.ballKey = document.getElementById("netBallSel").value;
+  document.getElementById("netDistVal").textContent = netState.distance.toFixed(1);
+  document.getElementById("netHtVal").textContent = netState.height.toFixed(2);
+  document.getElementById("netAngVal").textContent = netState.angle;
+  document.getElementById("netAngleGroup").style.display = netState.auto ? "none" : "block";
+  renderNetClearance();
+}
+
+function renderNetClearance() {
+  const ball = BALLS[netState.ballKey];
+  let effectiveAngle = netState.angle;
+
+  // Auto-optimize
+  const optBox = document.getElementById("netOptimalBox");
+  if (netState.auto) {
+    const opt = findOptimalNetAngle(netState.distance, netState.height, ball.mass, ball.diameter, ball.cd, "earth");
+    if (opt) {
+      effectiveAngle = opt.angle;
+      optBox.style.display = "block";
+      document.getElementById("netOptAng").textContent = opt.angle;
+    } else {
+      optBox.style.display = "none";
+    }
+  } else {
+    optBox.style.display = "none";
+  }
+
+  const minResult = calcMinNetSpeed(netState.distance, netState.height, effectiveAngle, ball.mass, ball.diameter, ball.cd, "earth");
+
+  let statsHtml = "";
+  let traj = null;
+  let clearance = null;
+
+  if (minResult) {
+    traj = minResult.trajectory;
+    const yAtNet = heightAtX(traj, netState.distance);
+    clearance = yAtNet !== null ? yAtNet - netState.height : null;
+    statsHtml = [
+      { l: "Min Initial Speed", v: minResult.speed, u: "m/s", h: true },
+      { l: "Launch Angle", v: effectiveAngle, u: "°", h: false },
+      { l: "Clearance Margin", v: clearance !== null ? clearance : 0, u: "m", h: true },
+      { l: "Height at Net", v: yAtNet !== null ? yAtNet : 0, u: "m", h: false },
+    ].map(s => '<div class="stat-box ' + (s.h ? "highlight" : "") + '"><div class="stat-label">' + s.l + '</div><div class="stat-val">' + (typeof s.v === "number" ? s.v.toFixed(2) : s.v) + '<span class="stat-unit">' + s.u + '</span></div></div>').join("");
+  } else {
+    statsHtml = '<div class="stat-box" style="grid-column:1/-1;color:var(--danger);">Cannot clear net with current parameters. Increase angle or adjust net.</div>';
+  }
+
+  document.getElementById("netStats").innerHTML = statsHtml;
+
+  // Trajectory
+  if (traj) {
+    drawTrajectories(document.getElementById("netCanvas"), [{
+      result: traj, color: "#1E40AF", label: "Min speed " + minResult.speed.toFixed(1) + " m/s"
+    }], { height: 380, net: { distance: netState.distance, height: netState.height }, animId: "netCanvas" });
+  } else {
+    const netSetup = setupCanvas(document.getElementById("netCanvas"), 380);
+    if (netSetup) {
+      const { ctx, w, h } = netSetup;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#F0F4FF"; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#94A3B8"; ctx.font = "14px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("No valid trajectory", w / 2, h / 2);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAG ANALYSIS PAGE
+// ═══════════════════════════════════════════════════════════
+
+function onDragChange() {
+  dragState.angle = parseFloat(document.getElementById("dAng").value);
+  dragState.velocity = parseFloat(document.getElementById("dVel").value);
+  dragState.ballKey = document.getElementById("dragBallSel").value;
+  document.getElementById("dAngVal").textContent = dragState.angle;
+  document.getElementById("dVelVal").textContent = dragState.velocity;
+  renderDragAnalysis();
+}
+
+function renderDragAnalysis() {
+  const ball = BALLS[dragState.ballKey];
+  document.getElementById("dragLabel").textContent = dragState.angle + "° / " + dragState.velocity + " m/s";
+
+  // Ball preview
+  const bpCv = document.getElementById("dragBallPreview");
+  const bpCtx = bpCv.getContext("2d");
+  bpCtx.clearRect(0, 0, 100, 100);
+  drawBall(bpCtx, 50, 50, 42, dragState.ballKey);
+
+  const noDrag = simulateNoDrag(dragState.angle, dragState.velocity, "earth");
+  const withDrag = simulateWithDrag(dragState.angle, dragState.velocity, ball.mass, ball.diameter, ball.cd, "earth");
+
+  // Trajectories
+  drawTrajectories(document.getElementById("dragCanvas"), [
+    { result: noDrag, color: "#16A34A", label: "Theory (no drag)" },
+    { result: withDrag, color: "#DC2626", label: "Real (with drag)" },
+  ], { height: 400, animId: "dragCanvas" });
+
+  // Differences
+  const rangeLoss = noDrag.maxRange - withDrag.maxRange;
+  const rangeLossPct = (rangeLoss / noDrag.maxRange) * 100;
+  const heightLoss = noDrag.maxHeight - withDrag.maxHeight;
+  const timeLoss = noDrag.flightTime - withDrag.flightTime;
+  const speedLoss = noDrag.landingSpeed - withDrag.landingSpeed;
+
+  document.getElementById("dragDiff").innerHTML = [
+    { l: "Range Loss", v: rangeLoss, u: "m", pct: rangeLossPct },
+    { l: "Height Loss", v: heightLoss, u: "m" },
+    { l: "Time Loss", v: timeLoss, u: "s" },
+    { l: "Speed Loss", v: speedLoss, u: "m/s" },
+  ].map(s => '<div class="stat-box diff"><div class="stat-label">' + s.l + '</div><div class="stat-val">' + s.v.toFixed(2) + '<span class="stat-unit">' + s.u + '</span></div>' + (s.pct !== undefined ? '<div class="stat-label">↓ ' + s.pct.toFixed(1) + '%</div>' : '') + '</div>').join("");
+
+  document.getElementById("dragPct").textContent = rangeLossPct.toFixed(1) + "%";
+
+  // Table
+  const rows = [
+    { l: "Range (m)", t: noDrag.maxRange, a: withDrag.maxRange },
+    { l: "Max Height (m)", t: noDrag.maxHeight, a: withDrag.maxHeight },
+    { l: "Flight Time (s)", t: noDrag.flightTime, a: withDrag.flightTime },
+    { l: "Landing Speed (m/s)", t: noDrag.landingSpeed, a: withDrag.landingSpeed },
+    { l: "Landing Vx (m/s)", t: noDrag.landingVx, a: withDrag.landingVx },
+    { l: "Landing Vy (m/s)", t: Math.abs(noDrag.landingVy), a: Math.abs(withDrag.landingVy) },
+  ];
+  let thtml = '<thead><tr><th>Metric</th><th class="right">Theory (no drag)</th><th class="right">Real (with drag)</th><th class="right">Difference</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const d = r.t - r.a;
+    thtml += '<tr><td class="font-medium">' + r.l + '</td>';
+    thtml += '<td class="right mono" style="color:var(--muted)">' + r.t.toFixed(2) + '</td>';
+    thtml += '<td class="right mono" style="font-weight:700">' + r.a.toFixed(2) + '</td>';
+    thtml += '<td class="right mono" style="color:var(--danger)">' + (d >= 0 ? "−" : "+") + Math.abs(d).toFixed(2) + '</td></tr>';
+  });
+  thtml += '</tbody>';
+  document.getElementById("dragTable").innerHTML = thtml;
+
+  // Store bar data for lazy render
+  dragState._barData = [
+    { label: "Range", Theory: parseFloat(noDrag.maxRange.toFixed(2)), Real: parseFloat(withDrag.maxRange.toFixed(2)) },
+    { label: "Height", Theory: parseFloat(noDrag.maxHeight.toFixed(2)), Real: parseFloat(withDrag.maxHeight.toFixed(2)) },
+    { label: "Time", Theory: parseFloat(noDrag.flightTime.toFixed(2)), Real: parseFloat(withDrag.flightTime.toFixed(2)) },
+    { label: "Landing", Theory: parseFloat(noDrag.landingSpeed.toFixed(2)), Real: parseFloat(withDrag.landingSpeed.toFixed(2)) },
+  ];
+  // Render bar chart if visible
+  if (document.getElementById("dragTabChart").classList.contains("active")) {
+    renderDragBar();
+  }
+}
+
+function renderDragBar() {
+  if (!dragState._barData) return;
+  drawBarChart(document.getElementById("dragBar"), dragState._barData, [
+    { key: "Theory", label: "Theory", color: "#16A34A" },
+    { key: "Real", label: "Real", color: "#DC2626" },
+  ], "(m / s)");
+}
+
+// ═══════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════
+
+function init() {
+  buildBallSelector();
+  buildBallSelectDropdowns();
+  buildCmpAngleCheckboxes();
+  document.getElementById("netBallSel").value = netState.ballKey;
+  document.getElementById("dragBallSel").value = dragState.ballKey;
+  renderSimulator();
+
+  // Re-render on resize
+  let resizeTimer;
+  window.addEventListener("resize", function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      const activePage = document.querySelector(".page.active").id.replace("page-", "");
+      showPage(activePage);
+    }, 200);
+  });
+}
+
+// Run after DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
